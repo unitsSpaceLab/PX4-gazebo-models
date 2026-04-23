@@ -1,0 +1,640 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="contamination_world">
+    
+    <!-- ============================================ -->
+    <!-- CONTAMINATION SOURCE LOCALIZATION SCENARIO  -->
+    <!-- ============================================ -->
+    <!-- Source Location: (15, -10) inside warehouse -->
+    <!-- Drone spawn: (-25, 20, 2.5)                  -->
+    <!-- Rover spawn: (-25, 15, 0.5)                  -->
+    <!-- ============================================ -->
+    
+    <!-- Physics Configuration -->
+    <physics name="1ms" type="dart">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+
+    <!-- Required for PX4 sensors -->
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <!-- GPS coordinates (Zurich area - PX4 default) -->
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>47.397971057728974</latitude_deg>
+      <longitude_deg>8.546163739800146</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+ 
+    <!-- Lighting -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 50 0 0 0</pose>
+      <diffuse>0.9 0.9 0.85 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <direction>-0.5 0.2 -0.9</direction>
+    </light>
+    
+    <light type="directional" name="fill">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 30 0 0 0</pose>
+      <diffuse>0.3 0.3 0.4 1</diffuse>
+      <direction>0.5 -0.2 -0.7</direction>
+    </light>
+
+    <!-- ============================================ -->
+    <!-- GROUND ZONES - CONTAMINATION GRADIENT       -->
+    <!-- ============================================ -->
+    
+    <!-- Base Ground (Clean - Green) -->
+    <model name="ground_clean">
+      <static>true</static>
+      <pose>0 0 -0.01 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>100 100 0.02</size></box>
+          </geometry>
+          <surface>
+            <friction><ode><mu>100</mu><mu2>100</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>100 100 0.02</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.6 0.25 1</ambient>
+            <diffuse>0.2 0.6 0.25 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Trace Contamination Zone (Yellow-Green) - 30-45m radius -->
+    <model name="zone_trace">
+      <static>true</static>
+      <pose>15 -10 0.001 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>45</radius><length>0.01</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.7 0.85 0.4 1</ambient>
+            <diffuse>0.7 0.85 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Low Contamination Zone (Yellow) - 20-30m radius -->
+    <model name="zone_low">
+      <static>true</static>
+      <pose>15 -10 0.002 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>30</radius><length>0.01</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.95 0.9 0.3 1</ambient>
+            <diffuse>0.95 0.9 0.3 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Medium Contamination Zone (Orange) - 12-20m radius -->
+    <model name="zone_medium">
+      <static>true</static>
+      <pose>15 -10 0.003 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>20</radius><length>0.01</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>1.0 0.6 0.1 1</ambient>
+            <diffuse>1.0 0.6 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- High Contamination Zone (Red-Orange) - 5-12m radius -->
+    <model name="zone_high">
+      <static>true</static>
+      <pose>15 -10 0.004 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>12</radius><length>0.01</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>1.0 0.25 0.0 1</ambient>
+            <diffuse>1.0 0.25 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Critical Contamination Zone (Dark Red) - 0-5m radius -->
+    <model name="zone_critical">
+      <static>true</static>
+      <pose>15 -10 0.005 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>5</radius><length>0.01</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.8 0.0 0.0 1</ambient>
+            <diffuse>0.8 0.0 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================ -->
+    <!-- WAREHOUSE - Covers Contamination Source     -->
+    <!-- Drone cannot see inside, rover must enter   -->
+    <!-- ============================================ -->
+    
+    <model name="contaminated_warehouse">
+      <static>true</static>
+      <pose>15 -10 0 0 0 0</pose>
+      
+      <!-- Floor -->
+      <link name="floor">
+        <pose>0 0 0.05 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>14 12 0.1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>14 12 0.1</size></box></geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.4 0.4 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Roof (blocks drone view) -->
+      <link name="roof">
+        <pose>0 0 4.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>14 12 0.3</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>14 12 0.3</size></box></geometry>
+          <material>
+            <ambient>0.35 0.3 0.25 1</ambient>
+            <diffuse>0.45 0.4 0.35 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Back Wall -->
+      <link name="wall_back">
+        <pose>0 -5.85 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>14 0.3 4.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>14 0.3 4.5</size></box></geometry>
+          <material>
+            <ambient>0.4 0.35 0.3 1</ambient>
+            <diffuse>0.5 0.45 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Left Wall -->
+      <link name="wall_left">
+        <pose>-6.85 0 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.3 12 4.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.3 12 4.5</size></box></geometry>
+          <material>
+            <ambient>0.4 0.35 0.3 1</ambient>
+            <diffuse>0.5 0.45 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Right Wall -->
+      <link name="wall_right">
+        <pose>6.85 0 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.3 12 4.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.3 12 4.5</size></box></geometry>
+          <material>
+            <ambient>0.4 0.35 0.3 1</ambient>
+            <diffuse>0.5 0.45 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Front Wall Left (with door opening) -->
+      <link name="wall_front_left">
+        <pose>-4.5 5.85 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>5 0.3 4.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5 0.3 4.5</size></box></geometry>
+          <material>
+            <ambient>0.4 0.35 0.3 1</ambient>
+            <diffuse>0.5 0.45 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Front Wall Right -->
+      <link name="wall_front_right">
+        <pose>4.5 5.85 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>5 0.3 4.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5 0.3 4.5</size></box></geometry>
+          <material>
+            <ambient>0.4 0.35 0.3 1</ambient>
+            <diffuse>0.5 0.45 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Door Header -->
+      <link name="door_header">
+        <pose>0 5.85 3.75 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>4 0.3 1.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>4 0.3 1.5</size></box></geometry>
+          <material>
+            <ambient>0.4 0.35 0.3 1</ambient>
+            <diffuse>0.5 0.45 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Contamination Source Marker (inside warehouse) -->
+      <link name="source_marker">
+        <pose>0 0 0.3 0 0 0</pose>
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>1.5</radius><length>0.5</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.9 0.0 0.0 1</ambient>
+            <diffuse>1.0 0.1 0.1 1</diffuse>
+            <emissive>0.3 0.0 0.0 1</emissive>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================ -->
+    <!-- CANOPY STRUCTURES - Block aerial view       -->
+    <!-- Rover can navigate underneath               -->
+    <!-- ============================================ -->
+    
+    <!-- Canopy North -->
+    <model name="canopy_north">
+      <static>true</static>
+      <pose>0 18 0 0 0 0</pose>
+      
+      <link name="roof">
+        <pose>0 0 3 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>10 10 0.3</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>10 10 0.3</size></box></geometry>
+          <material>
+            <ambient>0.15 0.4 0.2 1</ambient>
+            <diffuse>0.2 0.5 0.25 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Pillars -->
+      <link name="pillar_1">
+        <pose>-4 -4 1.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+      <link name="pillar_2">
+        <pose>4 -4 1.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+      <link name="pillar_3">
+        <pose>-4 4 1.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+      <link name="pillar_4">
+        <pose>4 4 1.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.15</radius><length>3</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Canopy West -->
+    <model name="canopy_west">
+      <static>true</static>
+      <pose>-22 -5 0 0 0 0</pose>
+      
+      <link name="roof">
+        <pose>0 0 2.8 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>8 12 0.25</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>8 12 0.25</size></box></geometry>
+          <material>
+            <ambient>0.12 0.35 0.18 1</ambient>
+            <diffuse>0.18 0.45 0.22 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="pillar_1">
+        <pose>-3 -5 1.4 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+      <link name="pillar_2">
+        <pose>3 -5 1.4 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+      <link name="pillar_3">
+        <pose>-3 5 1.4 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+      <link name="pillar_4">
+        <pose>3 5 1.4 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.12</radius><length>2.8</length></cylinder></geometry>
+          <material><ambient>0.3 0.25 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================ -->
+    <!-- HAZARD BARRELS - Near contamination source  -->
+    <!-- ============================================ -->
+    
+    <model name="barrel_cluster">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      
+      <link name="barrel_1">
+        <pose>10 -6 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.7 0.3 0.0 1</ambient>
+            <diffuse>0.8 0.35 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="barrel_2">
+        <pose>12 -14 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.7 0.3 0.0 1</ambient>
+            <diffuse>0.8 0.35 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="barrel_3">
+        <pose>20 -8 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.7 0.3 0.0 1</ambient>
+            <diffuse>0.8 0.35 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="barrel_4">
+        <pose>8 -16 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.7 0.3 0.0 1</ambient>
+            <diffuse>0.8 0.35 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="barrel_5">
+        <pose>22 -12 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.35</radius><length>1.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.7 0.3 0.0 1</ambient>
+            <diffuse>0.8 0.35 0.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================ -->
+    <!-- ROCKS - Navigation obstacles                -->
+    <!-- ============================================ -->
+    
+    <model name="rock_1">
+      <static>true</static>
+      <pose>-12 8 0.4 0.1 0.2 0.5</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><sphere><radius>0.8</radius></sphere></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><sphere><radius>0.8</radius></sphere></geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <model name="rock_2">
+      <static>true</static>
+      <pose>28 -18 0.5 0.2 -0.1 1.2</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><sphere><radius>1.0</radius></sphere></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><sphere><radius>1.0</radius></sphere></geometry>
+          <material>
+            <ambient>0.45 0.45 0.45 1</ambient>
+            <diffuse>0.55 0.55 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <model name="rock_3">
+      <static>true</static>
+      <pose>5 28 0.35 -0.15 0.1 2.1</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><sphere><radius>0.7</radius></sphere></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><sphere><radius>0.7</radius></sphere></geometry>
+          <material>
+            <ambient>0.52 0.5 0.48 1</ambient>
+            <diffuse>0.62 0.6 0.58 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================ -->
+    <!-- SPAWN PADS - Visual markers                 -->
+    <!-- ============================================ -->
+    
+    <!-- Drone Spawn Pad -->
+    <model name="drone_spawn_pad">
+      <static>true</static>
+      <pose>-25 20 0.02 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>2.0</radius><length>0.04</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.8 1</ambient>
+            <diffuse>0.3 0.5 0.9 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Rover Spawn Pad -->
+    <model name="rover_spawn_pad">
+      <static>true</static>
+      <pose>-25 15 0.02 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>2.0</radius><length>0.04</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.8 0.5 0.2 1</ambient>
+            <diffuse>0.9 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================ -->
+    <!-- SCENARIO INFORMATION                        -->
+    <!-- ============================================ -->
+    <!--
+    CONTAMINATION SOURCE LOCALIZATION
+    ==================================
+    
+    Mission: Locate contamination source hidden inside warehouse
+    
+    ROBOT SPAWN POSITIONS:
+    - Drone: (-25, 20, 2.5) - Aerial survey start
+    - Rover: (-25, 15, 0.5) - Ground support
+    
+    CONTAMINATION ZONES (from source at 15, -10):
+    - Critical (red):     0-5m   radius - Value: 100
+    - High (orange-red):  5-12m  radius - Value: 80
+    - Medium (orange):    12-20m radius - Value: 60
+    - Low (yellow):       20-30m radius - Value: 40
+    - Trace (yellow-grn): 30-45m radius - Value: 20
+    - Clean (green):      >45m          - Value: 0
+    
+    CODE MOBILITY TRIGGER:
+    When drone determines source is inside warehouse
+    (covered structure), migrate gradient-following
+    algorithm to rover for ground-level investigation.
+    
+    Warehouse door opening: Front side (positive Y)
+    ==================================
+    -->
+
+  </world>
+</sdf>
